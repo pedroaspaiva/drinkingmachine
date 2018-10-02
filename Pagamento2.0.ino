@@ -22,8 +22,7 @@ void setup(){
   
 }
 void loop(){
-  
-  
+
     // Look for new cards
     if ( ! mfrc522.PICC_IsNewCardPresent())
         return;
@@ -35,8 +34,9 @@ void loop(){
                   0x00,0x00,0x00,0x00,
                   0x00,0x00,0x00,0x00,
                   0x00,0x00,0x00,0x00};
+    byte leitura[16];              
     byte blockaddr = 4;
-   
+    int decisao,decisaobb; 
         
 
   MFRC522::StatusCode status;
@@ -62,15 +62,29 @@ void loop(){
         Serial.println(mfrc522.GetStatusCodeName(status));
         return;
     }
-    Serial.println("AA");
-
-  Serial.println("Digite um valor para recarregar");
+   
+//    decisao = menu();
+//  if(decisao==1){
+//    decisaobb = exibeBebidas();
+//    
+//    
+//    
+//    }
+//    else if(decisao==2){
+        Serial.println("Digite um valor para recarregar");
   do{
     valor[0] = Serial.parseInt();
     
     }while(valor[0]<=0);
-    Serial.print(F("Seu valor é:")); Serial.println(valor[0]);
-
+    
+//
+//     status = (MFRC522::StatusCode) mfrc522.MIFARE_Read(blockaddr, leitura, 16);
+//    if (status != MFRC522::STATUS_OK) {
+//        Serial.print(F("MIFARE_Read() failed: "));
+//        Serial.println(mfrc522.GetStatusCodeName(status));
+//    }
+//    valor[0]+= leitura[0];
+    
     // Write data to the block
    status = (MFRC522::StatusCode) mfrc522.MIFARE_Write(blockaddr, valor, 16);
     if (status != MFRC522::STATUS_OK) {
@@ -78,13 +92,51 @@ void loop(){
         Serial.println(mfrc522.GetStatusCodeName(status));
     }
     Serial.println();
+      
+      
+  //    }
+
+
+    
+  
+        
 Serial.println("Cabo");
+clr();
      // Halt PICC
     mfrc522.PICC_HaltA();
     // Stop encryption on PCD
     mfrc522.PCD_StopCrypto1();
-    
 
 
     
   }
+ void clr(){
+  int i;
+  for(i=0;i<20;i++)
+    Serial.println(" ");
+  }
+//
+//  int menu(){
+//    int decisao;
+//    Serial.println("Escolha uma opção:");
+//    Serial.println("1----- Comprar uma bebida");
+//    Serial.println("2----- Recarregar cartão");
+//    do{
+//      decisao = Serial.read()-48;
+//      }while(decisao!=1 && decisao!=2);
+//
+//    return decisao;
+//   }
+//int exibeBebidas(){
+//  int decisaobb;
+//  Serial.println("1-Coca-Cola --> 3,00");
+//  Serial.println("2-Guaraná --> 2,50");
+//  Serial.println("3-Corotinho -->2,00");
+//  do{
+//    decisaobb = Serial.read()-48;
+//    }while(decisaobb!=1 && decisaobb!=2 && decisaobb!=3);
+//    return decisaobb;
+//
+//  }
+
+   
