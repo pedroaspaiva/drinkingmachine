@@ -126,7 +126,7 @@ void loop(){
 //        Serial.println(mfrc522.GetStatusCodeName(status));
 //    }
     verificaEstouro = valor[0];
-    verificaEstouro+= leitura[0];
+    verificaEstouro+=(int)( leitura[0]);
     valor[0]+= leitura[0];
     if(verificaEstouro>255){
       Serial.println("ERRO: O valor nao pode ultrapassar o máximo de 255");
