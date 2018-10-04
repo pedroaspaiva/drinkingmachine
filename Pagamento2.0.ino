@@ -77,6 +77,10 @@ void loop(){
           Serial.print("Você não tem créditos para essa compra, digite s para sair");
           saida();
           clr();
+               // Halt PICC
+    mfrc522.PICC_HaltA();
+    // Stop encryption on PCD
+    mfrc522.PCD_StopCrypto1();
           return;
           }
         valor[0] = leitura[0] - preco1;
@@ -87,6 +91,10 @@ void loop(){
           Serial.print("Você não tem créditos para essa compra, digite s para sair");
           saida();
           clr();
+               // Halt PICC
+    mfrc522.PICC_HaltA();
+    // Stop encryption on PCD
+    mfrc522.PCD_StopCrypto1();
           return;
           }
         valor[0] = leitura[0]-preco2;
@@ -97,6 +105,10 @@ void loop(){
           Serial.print("Você não tem créditos para essa compra, digite s para sair");
           saida();
           clr();
+               // Halt PICC
+    mfrc522.PICC_HaltA();
+    // Stop encryption on PCD
+    mfrc522.PCD_StopCrypto1();
           return;
           }
         valor[0] = leitura[0]-preco3;
@@ -125,7 +137,7 @@ void loop(){
 //        Serial.print(F("MIFARE_Read() failed: "));
 //        Serial.println(mfrc522.GetStatusCodeName(status));
 //    }
-    verificaEstouro = valor[0];
+    verificaEstouro = (int)(valor[0]);
     verificaEstouro+=(int)( leitura[0]);
     valor[0]+= leitura[0];
     if(verificaEstouro>255){
@@ -133,6 +145,10 @@ void loop(){
       Serial.print("Digite s para sair");
       saida();
       clr();
+           // Halt PICC
+    mfrc522.PICC_HaltA();
+    // Stop encryption on PCD
+    mfrc522.PCD_StopCrypto1();
       return;
       }
     
