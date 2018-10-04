@@ -1,6 +1,6 @@
 #include <SPI.h>
 #include <MFRC522.h>
-
+int BOMBA[] = {2,3,4}; // Pinos que ativarão as bombas
 constexpr uint8_t RST_PIN = 9;     // Configurable, see typical pin layout above
 constexpr uint8_t SS_PIN = 10;     // Configurable, see typical pin layout above
 MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
@@ -13,7 +13,10 @@ void setup(){
     while (!Serial);    // Do nothing if no serial port is opened (added for Arduinos based on ATMEGA32U4)
     SPI.begin();        // Init SPI bus
     mfrc522.PCD_Init(); // Init MFRC522 card
-
+    int i;
+    for(i=0;i<3;i++){
+    pinMode(BOMBA[i],OUTPUT);
+    }
         // Prepare the key (used both as key A and as key B)
     // using FFFFFFFFFFFFh which is the default at chip delivery from the factory
     for (byte i = 0; i < 6; i++) {
@@ -36,6 +39,7 @@ void loop(){
                   0x00,0x00,0x00,0x00};
     byte leitura[16];              
     byte blockaddr = 4;
+    
     int decisao,decisaobb,preco1=3,preco2=3,preco3=2; 
     int verificaEstouro;
         
@@ -83,6 +87,7 @@ void loop(){
     mfrc522.PCD_StopCrypto1();
           return;
           }
+          ativaBomba(BOMBA[0]);
         valor[0] = leitura[0] - preco1;
         
         }
@@ -97,7 +102,9 @@ void loop(){
     mfrc522.PCD_StopCrypto1();
           return;
           }
+        ativaBomba(BOMBA[1]);
         valor[0] = leitura[0]-preco2;
+        
         
         }
       else if(decisaobb==3){
@@ -111,6 +118,7 @@ void loop(){
     mfrc522.PCD_StopCrypto1();
           return;
           }
+          ativaBomba(BOMBA[2]);
         valor[0] = leitura[0]-preco3;
         
         }  
@@ -224,5 +232,13 @@ int exibeBebidas(){
     
     
     }
-
+int ativaBomba(int bomba){
+  digitalWrite(bomba,HIGH);
+  delay(5000);
+  digitalWrite(bomba,LOW);
+  return;
+  
+  
+  
+  }
    
