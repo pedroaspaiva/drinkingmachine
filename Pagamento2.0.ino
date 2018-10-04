@@ -37,6 +37,7 @@ void loop(){
     byte leitura[16];              
     byte blockaddr = 4;
     int decisao,decisaobb,preco1=3,preco2=3,preco3=2; 
+    int verificaEstouro;
         
 
   MFRC522::StatusCode status;
@@ -124,8 +125,10 @@ void loop(){
 //        Serial.print(F("MIFARE_Read() failed: "));
 //        Serial.println(mfrc522.GetStatusCodeName(status));
 //    }
+    verificaEstouro = valor[0];
+    verificaEstouro+= leitura[0];
     valor[0]+= leitura[0];
-    if(valor[0]>255){
+    if(verificaEstouro>255){
       Serial.println("ERRO: O valor nao pode ultrapassar o máximo de 255");
       Serial.print("Digite s para sair");
       saida();
