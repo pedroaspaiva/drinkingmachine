@@ -1,5 +1,6 @@
 #include <SPI.h>
 #include <MFRC522.h>
+#define NUMDRINKS 3
 int BOMBA[] = {2, 3, 4}; // Pinos que ativarão as bombas
 constexpr uint8_t RST_PIN = 9;     // Configurable, see typical pin layout above
 constexpr uint8_t SS_PIN = 10;     // Configurable, see typical pin layout above
@@ -33,15 +34,14 @@ void loop() {
                   0x00, 0x00, 0x00, 0x00,
                   0x00, 0x00, 0x00, 0x00
                  };
-  byte leitura[16];
-  byte blockaddr = 4;
+  byte readwrite[16];
+  byte blocosaldo = 4, blocoid = 5;
 
-  int drinkdata[3][2] = {3, 3, 2};
+  int drinkdata[2][NUMDRINKS] = {3, 3, 2,
+                                 0, 0, 1 };
+                                 
   int decisao, decisaobb, cobrar;
   int verificaEstouro;
-
-
-
 
   clr();
   decisao = menu();
@@ -52,16 +52,24 @@ void loop() {
     //        Serial.print(F("MIFARE_Read() failed: "));
     //        Serial.println(mfrc522.GetStatusCodeName(status));
     //    }
-    cobrar = drinkdata[decisaobb - 1];
+    cobrar = drinkdata[0][decisaobb-1];
     verificaCartao();
-    status = (MFRC522::StatusCode) mfrc522.MIFARE_Read(blockaddr, leitura, 16);
-    if (cobrar > leitura[0]) {
+    status = (MFRC522::StatusCode) mfrc522.MIFARE_Read(blocosaldo, readwrite, 16);
+    if (cobrar > readwrite[0]) {
       Serial.println("Você não tem créditos para comprar essa bebida");
       saida();
       return;
     }
-    valor[0] = leitura[0] - cobrar;
-    status = (MFRC522::StatusCode) mfrc522.MIFARE_Write(blockaddr, valor, 16);
+    if(drinkdata[1][decisaobb-1]==1){
+      if(readwrite[15]!=255){
+        Serial.println("Essa opção só está disponível para usuários maiores de 18 anos");
+        saida();
+        return;
+        }
+      
+      }
+    readwrite[0]-= cobrar;
+    status = (MFRC522::StatusCode) mfrc522.MIFARE_Write(blocosaldo, readwrite, 16);
     Serial.println("Concluído");
     saida();
     return;
@@ -75,14 +83,15 @@ void loop() {
     } while (valor[0] <= 0);
 
     verificaCartao();
-    status = (MFRC522::StatusCode) mfrc522.MIFARE_Read(blockaddr, leitura, 16);
+    status = (MFRC522::StatusCode) mfrc522.MIFARE_Read(blocosaldo, readwrite, 16);
     //    if (status != MFRC522::STATUS_OK) {
     //        Serial.print(F("MIFARE_Read() failed: "));
     //        Serial.println(mfrc522.GetStatusCodeName(status));
     //    }
     verificaEstouro = (int)(valor[0]);
-    verificaEstouro += (int)( leitura[0]);
-    valor[0] += leitura[0];
+    verificaEstouro += (int)( readwrite[0]);
+    valor[0] += readwrite[0];
+    valor[16] = readwrite[16];
     if (verificaEstouro > 255) {
       Serial.println("ERRO: O valor nao pode ultrapassar o máximo de 255");
 
@@ -92,7 +101,7 @@ void loop() {
     }
 
     // Write data to the block
-    status = (MFRC522::StatusCode) mfrc522.MIFARE_Write(blockaddr, valor, 16);
+    status = (MFRC522::StatusCode) mfrc522.MIFARE_Write(blocosaldo, valor, 16);
     //    if (status != MFRC522::STATUS_OK) {
     //        Serial.print(F("MIFARE_Write() failed: "));
     //        Serial.println(mfrc522.GetStatusCodeName(status));
@@ -105,9 +114,9 @@ void loop() {
   }
   else if (decisao == 3) {
     verificaCartao();
-    status = (MFRC522::StatusCode) mfrc522.MIFARE_Read(blockaddr, leitura, 16);
+    status = (MFRC522::StatusCode) mfrc522.MIFARE_Read(blocosaldo, readwrite, 16);
 
-    Serial.print("Seu saldo é de R$: "); Serial.println(leitura[0]);
+    Serial.print("Seu saldo é de R$: "); Serial.println(readwrite[0]);
     saida();
     return;
 
@@ -194,9 +203,6 @@ int verificaCartao() {
     Serial.println(mfrc522.GetStatusCodeName(status));
     return;
   }
-
-
-
 }
 
 
