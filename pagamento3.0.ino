@@ -1,5 +1,6 @@
 #include <SPI.h>
 #include <MFRC522.h>
+#include<EEPROM.h>
 #define NUMDRINKS 3
 int BOMBA[] = {2, 3, 4}; // Pinos que ativarão as bombas
 constexpr uint8_t RST_PIN = 9;     // Configurable, see typical pin layout above
@@ -35,16 +36,25 @@ void loop() {
                   0x00, 0x00, 0x00, 0x00
                  };
   byte readwrite[16];
-  byte blocosaldo = 4, blocoid = 5;
+  byte blocosaldo = 4, blocoid = 5,cont=0;
 
   int drinkdata[2][NUMDRINKS] = {3, 3, 2,
                                  0, 0, 1 };
                                  
-  int decisao, decisaobb, cobrar;
+  int decisao, // escolha do menu inicial 
+  decisaobb, // escolha da bebida a comprar 
+  cobrar; // valor a ser cobrado
   int verificaEstouro;
+  String idcard = "", idadm = "";
+  for(cont = 0;cont<4;cont++){
+    idadm.concat(String(EEPROM.read(cont),HEX));
+    
+    }
+    idadm.toUpperCase();
+ 
 
   clr();
-  decisao = menu();
+  decisao = menu(); // 1=comprar  2=recarregar 3= ver saldo
   if (decisao == 1) {
     decisaobb = exibeBebidas();
 
@@ -55,7 +65,8 @@ void loop() {
     cobrar = drinkdata[0][decisaobb-1];
     verificaCartao();
     status = (MFRC522::StatusCode) mfrc522.MIFARE_Read(blocosaldo, readwrite, 16);
-    if (cobrar > readwrite[0]) {
+    if (cobrar > readwrite[0]) // Verifica se o valor do saldo (gravado em readwrite[0]) é maior do que o valor a ser cobrado 
+    {
       Serial.println("Você não tem créditos para comprar essa bebida");
       saida();
       return;
@@ -76,12 +87,30 @@ void loop() {
 
   }
   else if (decisao == 2) {
+    Serial.println("Aproxime o cartão de administrador para ter acesso a esse procedimento");
+    verificaCartao();
+     for (byte i = 0; i < mfrc522.uid.size; i++) 
+  {
+     
+    idcard.concat(String(mfrc522.uid.uidByte[i], HEX));
+  }
+    idcard.toUpperCase();
+    if(idcard.substring(1) != idadm.substring(1)){
+      Serial.println("Apenas o cartão do administrador poderá efetuar recargas");
+      saida();
+      return;
+      }
+        // Halt PICC
+  mfrc522.PICC_HaltA();
+  // Stop encryption on PCD
+  mfrc522.PCD_StopCrypto1();
+      Serial.print("Cartão ADM identificado: ");
     Serial.println("Digite um valor para recarregar");
     do {
       valor[0] = Serial.parseInt();
 
     } while (valor[0] <= 0);
-
+    Serial.println("Aproxime o cartão do usuário que receberá a recarga");
     verificaCartao();
     status = (MFRC522::StatusCode) mfrc522.MIFARE_Read(blocosaldo, readwrite, 16);
     //    if (status != MFRC522::STATUS_OK) {
