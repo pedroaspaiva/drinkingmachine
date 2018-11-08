@@ -46,7 +46,7 @@ void loop() {
                                  0, 0, 1 };
                                  
   int decisao, // escolha do menu inicial 
-  decisaobb, // escolha da bebida a comprar 
+  decisaobb=0, // escolha da bebida a comprar 
   cobrar; // valor a ser cobrado
   int verificaEstouro;
   String idcard = "", idadm = "";
@@ -64,9 +64,9 @@ void loop() {
   lcd.setCursor(4,1);
   lcd.print("MACHINE");
   
-  decisao = menu(); // 1=comprar  2=recarregar 3= ver saldo
+  //decisao = menu(); // 1=comprar  2=recarregar 3= ver saldo
 
-  
+ decisao=1;
   
   if (decisao == 1) {
 
@@ -84,21 +84,43 @@ void loop() {
     if (cobrar > readwrite[0]) // Verifica se o valor do saldo (gravado em readwrite[0]) é maior do que o valor a ser cobrado 
     {
       Serial.println("Você não tem créditos para comprar essa bebida");
-      saida();
+      lcd.clear();
+      lcd.setCursor(5,0);
+      lcd.print("SALDO");
+      lcd.setCursor(2,1);
+      lcd.print("INSUFICIENTE");
+      delay(2000);
       return;
     }
     if(drinkdata[1][decisaobb-1]==1){
       if(readwrite[15]!=255){
         Serial.println("Essa opção só está disponível para usuários maiores de 18 anos");
-        saida();
+        lcd.clear();
+        lcd.setCursor(2,0);
+        lcd.print("COMPRA NEGADA");
+        lcd.setCursor(6,1);
+        lcd.print("+18");
+        delay(2000);
+          // Halt PICC
+  mfrc522.PICC_HaltA();
+  // Stop encryption on PCD
+  mfrc522.PCD_StopCrypto1();
         return;
         }
       
       }
     readwrite[0]-= cobrar;
     status = (MFRC522::StatusCode) mfrc522.MIFARE_Write(blocosaldo, readwrite, 16);
-    Serial.println("Concluído");
-    saida();
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("COMPRA EFETUADA");
+    lcd.setCursor(3,1);
+    lcd.print("SALDO: ");lcd.print(readwrite[0]);
+    delay(2000);
+      // Halt PICC
+  mfrc522.PICC_HaltA();
+  // Stop encryption on PCD
+  mfrc522.PCD_StopCrypto1();
     return;
 
   }
@@ -227,6 +249,11 @@ int ativaBomba(int bomba) {
 }
 int verificaCartao() {
   Serial.println("Aproxime o cartao");
+  lcd.clear();
+  lcd.setCursor(4,0);
+  lcd.print("APROXIME");
+  lcd.setCursor(4,1);
+  lcd.print("O CARTAO");
   do {
     while ( ! mfrc522.PICC_IsNewCardPresent());
   } while ( ! mfrc522.PICC_ReadCardSerial());
@@ -239,10 +266,10 @@ int verificaCartao() {
     Serial.println(mfrc522.GetStatusCodeName(status));
     return;
   }
-  // Show the whole sector as it currently is
-//  Serial.println(F("Current data in sector:"));
-//  mfrc522.PICC_DumpMifareClassicSectorToSerial(&(mfrc522.uid), &key, 1);
-//  Serial.println();
+//   Show the whole sector as it currently is
+  Serial.println(F("Current data in sector:"));
+  mfrc522.PICC_DumpMifareClassicSectorToSerial(&(mfrc522.uid), &key, 1);
+  Serial.println();
   // Authenticate using key B
   Serial.println(F("Authenticating again using key B..."));
   status = (MFRC522::StatusCode) mfrc522.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_B, 7, &key, &(mfrc522.uid));
@@ -255,25 +282,32 @@ int verificaCartao() {
 int leituraBotao(){
  int botao=0;
  Serial.print("APERTA AI POOOOOOOOOOO");
+ 
  do{ 
-  if(analogRead(A0) >= 700){
+  if(analogRead(A1) >= 700){ // coca cola escolhida
    botao=1;
    lcd.clear();
-   lcd.setCursor(6,0);
-   lcd.print("COCA");
-   lcd.setCursor(6,1);
-   lcd.print("COLA");
+   lcd.setCursor(2,0);
+   lcd.print("COCA-COLA");
  } 
-  else if(analogRead(A1) >=700)
+  else if(analogRead(A0) >=700)
   {
     botao = 2;
+    lcd.clear();
+    lcd.setCursor(5,0);
+    lcd.print("GUARANA");
   }
   else if(analogRead(A2) >=700){
+    lcd.clear();
+    lcd.setCursor(5,0);
+    lcd.print("COROTE");
     botao =3;  
   }
+ // Serial.println("A0     A1     A2");
+  //Serial.print(analogRead(A0));Serial.print("   ");Serial.print(analogRead(A1));Serial.print("   ");Serial.println(analogRead(A2));
   
   }while(!botao);
+  delay(2000);
   Serial.println("saiu");
 return botao;
 }
-
