@@ -58,8 +58,11 @@ void loop() {
  
 
   clr();
-  lcd.setCursor(0,0);
-  lcd.print("COCA KUAT COROTE");
+  lcd.clear();
+  lcd.setCursor(4,0);
+  lcd.print("DRINKING");
+  lcd.setCursor(4,1);
+  lcd.print("MACHINE");
   
   decisao = menu(); // 1=comprar  2=recarregar 3= ver saldo
 
@@ -255,6 +258,11 @@ int leituraBotao(){
  do{ 
   if(analogRead(A0) >= 700){
    botao=1;
+   lcd.clear();
+   lcd.setCursor(6,0);
+   lcd.print("COCA");
+   lcd.setCursor(6,1);
+   lcd.print("COLA");
  } 
   else if(analogRead(A1) >=700)
   {
