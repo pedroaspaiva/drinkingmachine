@@ -1,8 +1,11 @@
 #include <SPI.h>
 #include <MFRC522.h>
 #include<EEPROM.h>
+#include <LiquidCrystal.h>
 #define NUMDRINKS 3
-int BOMBA[] = {2, 3, 4}; // Pinos que ativarão as bombas
+
+LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
+int BOTOES[] = {A0,A1,A2}; // Pinos que ativarão as bombas
 constexpr uint8_t RST_PIN = 9;     // Configurable, see typical pin layout above
 constexpr uint8_t SS_PIN = 10;     // Configurable, see typical pin layout above
 MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
@@ -16,9 +19,10 @@ void setup() {
   while (!Serial);    // Do nothing if no serial port is opened (added for Arduinos based on ATMEGA32U4)
   SPI.begin();        // Init SPI bus
   mfrc522.PCD_Init(); // Init MFRC522 card
+  lcd.begin(16, 2);
   int i;
   for (i = 0; i < 3; i++) {
-    pinMode(BOMBA[i], OUTPUT);
+    pinMode(BOTOES[i], OUTPUT);
   }
   // Prepare the key (used both as key A and as key B)
   // using FFFFFFFFFFFFh which is the default at chip delivery from the factory
@@ -54,10 +58,19 @@ void loop() {
  
 
   clr();
+  lcd.setCursor(0,0);
+  lcd.print("COCA KUAT COROTE");
+  
   decisao = menu(); // 1=comprar  2=recarregar 3= ver saldo
-  if (decisao == 1) {
-    decisaobb = exibeBebidas();
 
+  
+  
+  if (decisao == 1) {
+
+
+   //exibeBebidas();
+   decisaobb = leituraBotao();
+  
     //    if (status != MFRC522::STATUS_OK) {
     //        Serial.print(F("MIFARE_Read() failed: "));
     //        Serial.println(mfrc522.GetStatusCodeName(status));
@@ -146,6 +159,9 @@ void loop() {
     status = (MFRC522::StatusCode) mfrc522.MIFARE_Read(blocosaldo, readwrite, 16);
 
     Serial.print("Seu saldo é de R$: "); Serial.println(readwrite[0]);
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("SALDO : "); lcd.print(readwrite[0]);
     saida();
     return;
 
@@ -233,5 +249,23 @@ int verificaCartao() {
     return;
   }
 }
-
+int leituraBotao(){
+ int botao=0;
+ Serial.print("APERTA AI POOOOOOOOOOO");
+ do{ 
+  if(analogRead(A0) >= 700){
+   botao=1;
+ } 
+  else if(analogRead(A1) >=700)
+  {
+    botao = 2;
+  }
+  else if(analogRead(A2) >=700){
+    botao =3;  
+  }
+  
+  }while(!botao);
+  Serial.println("saiu");
+return botao;
+}
 
