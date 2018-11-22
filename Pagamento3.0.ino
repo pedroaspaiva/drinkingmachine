@@ -1,7 +1,7 @@
 #include <SPI.h>
 #include <MFRC522.h>
 #include<EEPROM.h>
-
+#include <Ultrasonic.h>
 
 
 
@@ -15,16 +15,40 @@ constexpr uint8_t RST_PIN = 9;     // Configurable, see typical pin layout above
 constexpr uint8_t SS_PIN = 10;     // Configurable, see typical pin layout above
 MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
 MFRC522::MIFARE_Key key;
+
+const int trigPin = 6;
+const int echoPin = 7;
+Ultrasonic ultrasonic(trigPin, echoPin);
+const float areabase =66.67; 
+
+const float alturarecipiente = 11; 
+
+
+// defines variables
+long duration; 
+
+float distance;
+
+long volume,volume1;
+
+int bomba;
+float alturaliquido;
 /**
    Initialize.
 */
 MFRC522::StatusCode status;
 void setup() {
+  
+pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
+pinMode(echoPin, INPUT); // Sets the echoPin as an Input
+
   Serial.begin(9600); // Initialize serial communications with the PC
   while (!Serial);    // Do nothing if no serial port is opened (added for Arduinos based on ATMEGA32U4)
   SPI.begin();        // Init SPI bus
   mfrc522.PCD_Init(); // Init MFRC522 card
   lcd.begin(16, 2);
+  pinMode(3, OUTPUT);
+
   int i;
   for (i = 0; i < 3; i++) {
     pinMode(BOTOES[i], OUTPUT);
@@ -84,6 +108,7 @@ void loop() {
     //        Serial.println(mfrc522.GetStatusCodeName(status));
     //    }
     cobrar = drinkdata[0][decisaobb-1];
+    delay(1500);
     verificaCartao();
     status = (MFRC522::StatusCode) mfrc522.MIFARE_Read(blocosaldo, readwrite, 16);
     if (cobrar > readwrite[0]) // Verifica se o valor do saldo (gravado em readwrite[0]) é maior do que o valor a ser cobrado 
@@ -122,6 +147,7 @@ void loop() {
     lcd.setCursor(3,1);
     lcd.print("SALDO: ");lcd.print(readwrite[0]);
     delay(2000);
+     ativaBomba(bomba);
       // Halt PICC
   mfrc522.PICC_HaltA();
   // Stop encryption on PCD
@@ -248,7 +274,50 @@ int saida() {
 }
 int ativaBomba(int bomba) {
   digitalWrite(bomba, HIGH);
-  delay(5000);
+digitalWrite(trigPin, LOW);
+                   Serial.println("ENTREEI");
+                  delayMicroseconds(2);
+                  // Sets the trigPin on HIGH state for 10 micro seconds
+                  digitalWrite(trigPin, HIGH);
+                  delayMicroseconds(10);
+                  digitalWrite(trigPin, LOW);
+                  // Reads the echoPin, returns the sound wave travel time in microseconds
+                  duration = pulseIn(echoPin, HIGH);
+                  // Calculating the distance
+                  distance=1* duration*0.0343/2;
+                  // Prints the distance on the Serial Monitor
+
+                  //Serial.println(distance); 
+
+                  alturaliquido = ((-1)*distance)+ alturarecipiente;
+
+                  volume = alturaliquido*areabase;
+                  delay(100);
+                  do{
+                    Serial.println("N FOI AINDA");
+                    digitalWrite(trigPin, LOW);
+                  delayMicroseconds(2);
+                  // Sets the trigPin on HIGH state for 10 micro seconds
+                  digitalWrite(trigPin, HIGH);
+                  delayMicroseconds(10);
+                  digitalWrite(trigPin, LOW);
+                  // Reads the echoPin, returns the sound wave travel time in microseconds
+                  duration = pulseIn(echoPin, HIGH);
+                  // Calculating the distance
+                  distance=1* duration*0.0343/2;
+                  // Prints the distance on the Serial Monitor
+
+                  //Serial.println(distance); 
+
+                  alturaliquido = ((-1)*distance)+ alturarecipiente;
+
+                  volume1 = alturaliquido*areabase;
+                  delay(100);
+                    
+                    Serial.print(volume);Serial.print(volume1);
+                    }while(volume1>(volume-300));                  
+               Serial.println("SAIUUUU");
+
   digitalWrite(bomba, LOW);
   return;
 }
@@ -291,6 +360,7 @@ int leituraBotao(){
  do{ 
   if(analogRead(A1) >= 700){ // coca cola escolhida
    botao=1;
+   bomba = 4;
    lcd.clear();
    lcd.setCursor(2,0);
    lcd.print("COCA-COLA");
@@ -298,6 +368,7 @@ int leituraBotao(){
   else if(analogRead(A0) >=700)
   {
     botao = 2;
+    bomba = 3;
     lcd.clear();
     lcd.setCursor(5,0);
     lcd.print("GUARANA");
@@ -307,12 +378,13 @@ int leituraBotao(){
     lcd.setCursor(5,0);
     lcd.print("COROTE");
     botao =3;  
+    bomba = 5;
   }
-  Serial.println("A0     A1     A2");
-  Serial.print(analogRead(A0));Serial.print("   ");Serial.print(analogRead(A1));Serial.print("   ");Serial.println(analogRead(A2));
+  //Serial.println("A0     A1     A2");
+  //Serial.print(analogRead(A0));Serial.print("   ");Serial.print(analogRead(A1));Serial.print("   ");Serial.println(analogRead(A2));
   
   }while(!botao);
-  delay(2000);
+
   Serial.println("saiu");
 return botao;
 }
