@@ -31,7 +31,7 @@ float distance;
 
 long volume,volume1;
 
-int bomba;
+int bomba,quantidade;
 float alturaliquido;
 /**
    Initialize.
@@ -69,6 +69,7 @@ void loop() {
                   0x00, 0x00, 0x00, 0x00
                  };
   byte readwrite[16];
+  boolean error;
   byte blocosaldo = 4, blocoid = 5,cont=0;
 
   int drinkdata[2][NUMDRINKS] = {3, 3, 2,
@@ -88,10 +89,11 @@ void loop() {
 
   clr();
   lcd.clear();
-  lcd.setCursor(4,0);
-  lcd.print("DRINKING");
-  lcd.setCursor(4,1);
-  lcd.print("MACHINE");
+  lcd.setCursor(6,0);
+  lcd.print("BAR");
+  lcd.setCursor(5,1);
+  lcd.print("DUINO");
+ 
   
   //decisao = menu(); // 1=comprar  2=recarregar 3= ver saldo
 
@@ -108,8 +110,21 @@ void loop() {
     //        Serial.println(mfrc522.GetStatusCodeName(status));
     //    }
     cobrar = drinkdata[0][decisaobb-1];
-    delay(1500);
-    verificaCartao();
+   
+    error = verificaCartao();
+    if(error == true ){
+      lcd.clear();
+      lcd.setCursor(0,0);
+      lcd.print("ERRO NA LEITURA");
+      delay(1300);
+            // Halt PICC
+  mfrc522.PICC_HaltA();
+  // Stop encryption on PCD
+  mfrc522.PCD_StopCrypto1();
+      return;
+      
+      }
+    
     status = (MFRC522::StatusCode) mfrc522.MIFARE_Read(blocosaldo, readwrite, 16);
     if (cobrar > readwrite[0]) // Verifica se o valor do saldo (gravado em readwrite[0]) é maior do que o valor a ser cobrado 
     {
@@ -147,7 +162,7 @@ void loop() {
     lcd.setCursor(3,1);
     lcd.print("SALDO: ");lcd.print(readwrite[0]);
     delay(2000);
-     ativaBomba(bomba);
+     //ativaBomba(bomba);
       // Halt PICC
   mfrc522.PICC_HaltA();
   // Stop encryption on PCD
@@ -315,7 +330,7 @@ digitalWrite(trigPin, LOW);
                   delay(100);
                     
                     Serial.print(volume);Serial.print(volume1);
-                    }while(volume1>(volume-300));                  
+                    }while(volume1>(volume-quantidade));                  
                Serial.println("SAIUUUU");
 
   digitalWrite(bomba, LOW);
@@ -338,7 +353,7 @@ int verificaCartao() {
   if (status != MFRC522::STATUS_OK) {
     Serial.print(F("PCD_Authenticate() failed: "));
     Serial.println(mfrc522.GetStatusCodeName(status));
-    return;
+    return true;
   }
 //   Show the whole sector as it currently is
   Serial.println(F("Current data in sector:"));
@@ -350,22 +365,23 @@ int verificaCartao() {
   if (status != MFRC522::STATUS_OK) {
     Serial.print(F("PCD_Authenticate() failed: "));
     Serial.println(mfrc522.GetStatusCodeName(status));
-    return;
+    return true;
   }
+  return false;
 }
 int leituraBotao(){
  int botao=0;
  Serial.print("APERTA AI POOOOOOOOOOO");
  
  do{ 
-  if(analogRead(A1) >= 700){ // coca cola escolhida
+  if(analogRead(A0) >= 700){ // coca cola escolhida
    botao=1;
    bomba = 4;
    lcd.clear();
    lcd.setCursor(2,0);
    lcd.print("COCA-COLA");
  } 
-  else if(analogRead(A0) >=700)
+  else if(analogRead(A1) >=700)
   {
     botao = 2;
     bomba = 3;
@@ -384,7 +400,43 @@ int leituraBotao(){
   //Serial.print(analogRead(A0));Serial.print("   ");Serial.print(analogRead(A1));Serial.print("   ");Serial.println(analogRead(A2));
   
   }while(!botao);
-
+  delay(1500);
+  lcd.clear();
+  lcd.setCursor(3,0);
+  lcd.print("ESCOLHA A");
+  lcd.setCursor(3,1);
+  lcd.print("QUANTIDADE");
+  delay(1500);
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("50ML 150ML 300ML");
+  quantidade=0; 
+  do{
+    if(analogRead(A0)>=700){
+      lcd.clear();
+      lcd.setCursor(6,0);
+      lcd.print("50ML");
+      quantidade = 50;
+      
+      }
+     else if(analogRead(A1)>=700){
+      lcd.clear();
+      lcd.setCursor(6,0);
+      lcd.print("150ML");
+      quantidade = 150;
+      }
+      else if(analogRead(A2)>=700){
+        lcd.clear();
+        lcd.setCursor(6,0);
+        lcd.print("300ML");
+        quantidade=300;
+        
+        } 
+        
+    }while(!quantidade);
+  delay(1000);
+  
+  
   Serial.println("saiu");
 return botao;
 }
