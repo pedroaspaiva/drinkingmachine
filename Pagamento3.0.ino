@@ -11,17 +11,18 @@
 // Inicializa o display no endereco 0x27
 LiquidCrystal_I2C lcd(0x3f,2,1,0,4,5,6,7,3, POSITIVE);
 int BOTOES[] = {A0,A1,A2}; // Pinos que ativarão as bombas
+int qtdes[] = {150,300};
 constexpr uint8_t RST_PIN = 9;     // Configurable, see typical pin layout above
 constexpr uint8_t SS_PIN = 10;     // Configurable, see typical pin layout above
 MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
 MFRC522::MIFARE_Key key;
-
+int quantia;
 const int trigPin = 6;
 const int echoPin = 7;
 Ultrasonic ultrasonic(trigPin, echoPin);
-const float areabase =66.67; 
+const float areabase =86.65; 
 
-const float alturarecipiente = 11; 
+const float alturarecipiente = 21; 
 
 
 // defines variables
@@ -47,8 +48,9 @@ pinMode(echoPin, INPUT); // Sets the echoPin as an Input
   SPI.begin();        // Init SPI bus
   mfrc522.PCD_Init(); // Init MFRC522 card
   lcd.begin(16, 2);
-  pinMode(3, OUTPUT);
-
+  pinMode(4, OUTPUT);
+  pinMode(3,OUTPUT);
+  pinMode(5,OUTPUT);  
   int i;
   for (i = 0; i < 3; i++) {
     pinMode(BOTOES[i], OUTPUT);
@@ -62,17 +64,21 @@ pinMode(echoPin, INPUT); // Sets the echoPin as an Input
 }
 void loop() {
 
-
   byte valor[] = {0x00, 0x00, 0x00, 0x00,
                   0x00, 0x00, 0x00, 0x00,
                   0x00, 0x00, 0x00, 0x00,
                   0x00, 0x00, 0x00, 0x00
                  };
-  byte readwrite[16];
+  byte readwrite[16] = {0x00, 0x00, 0x00, 0x00,
+                  0x00, 0x00, 0x00, 0x00,
+                  0x00, 0x00, 0x00, 0x00,
+                  0x00, 0x00, 0x00, 0x00
+                 };
   boolean error;
   byte blocosaldo = 4, blocoid = 5,cont=0;
 
-  int drinkdata[2][NUMDRINKS] = {3, 3, 2,
+  int drinkdata[3][NUMDRINKS] = {2, 1, 1,
+                                 3, 2, 2, 
                                  0, 0, 1 };
                                  
   int decisao, // escolha do menu inicial 
@@ -97,19 +103,18 @@ void loop() {
   
   //decisao = menu(); // 1=comprar  2=recarregar 3= ver saldo
 
- decisao=1;
-  
-  if (decisao == 1) {
+
 
 
    //exibeBebidas();
    decisaobb = leituraBotao();
-  
+  if(decisaobb==15)
+    return;
     //    if (status != MFRC522::STATUS_OK) {
     //        Serial.print(F("MIFARE_Read() failed: "));
     //        Serial.println(mfrc522.GetStatusCodeName(status));
     //    }
-    cobrar = drinkdata[0][decisaobb-1];
+    cobrar = drinkdata[quantia][decisaobb-1];
    
     error = verificaCartao();
     if(error == true ){
@@ -125,7 +130,21 @@ void loop() {
       
       }
     
+   delay(10);
     status = (MFRC522::StatusCode) mfrc522.MIFARE_Read(blocosaldo, readwrite, 16);
+//          if (status != MFRC522::STATUS_OK) {
+//    Serial.print(F("PCD_Authenticate() failed: "));
+//    Serial.println(mfrc522.GetStatusCodeName(status));
+//       lcd.clear();
+//      lcd.setCursor(0,0);
+//      lcd.print("ERRO NA LEITURA");
+//      delay(1300);
+//            // Halt PICC
+//  mfrc522.PICC_HaltA();
+//  // Stop encryption on PCD
+//  mfrc522.PCD_StopCrypto1();
+//    return ;
+//  }
     if (cobrar > readwrite[0]) // Verifica se o valor do saldo (gravado em readwrite[0]) é maior do que o valor a ser cobrado 
     {
       Serial.println("Você não tem créditos para comprar essa bebida");
@@ -135,6 +154,9 @@ void loop() {
       lcd.setCursor(2,1);
       lcd.print("INSUFICIENTE");
       delay(2000);
+       mfrc522.PICC_HaltA();
+  // Stop encryption on PCD
+  mfrc522.PCD_StopCrypto1();
       return;
     }
     if(drinkdata[1][decisaobb-1]==1){
@@ -156,93 +178,31 @@ void loop() {
       }
     readwrite[0]-= cobrar;
     status = (MFRC522::StatusCode) mfrc522.MIFARE_Write(blocosaldo, readwrite, 16);
+      if (status != MFRC522::STATUS_OK) {
+    Serial.print(F("PCD_Authenticate() failed: "));
+    Serial.println(mfrc522.GetStatusCodeName(status));
+       lcd.clear();
+      lcd.setCursor(0,0);
+      lcd.print("ERRO NA LEITURA");
+      delay(1300);
+            // Halt PICC
+  mfrc522.PICC_HaltA();
+  // Stop encryption on PCD
+  mfrc522.PCD_StopCrypto1();
+    return ;
+  }
     lcd.clear();
     lcd.setCursor(0,0);
     lcd.print("COMPRA EFETUADA");
     lcd.setCursor(3,1);
     lcd.print("SALDO: ");lcd.print(readwrite[0]);
-    delay(2000);
-     //ativaBomba(bomba);
+    delay(1000);
+     ativaBomba(bomba);
       // Halt PICC
   mfrc522.PICC_HaltA();
   // Stop encryption on PCD
   mfrc522.PCD_StopCrypto1();
     return;
-
-  }
-  else if (decisao == 2) {
-    Serial.println("Aproxime o cartão de administrador para ter acesso a esse procedimento");
-    verificaCartao();
-     for (byte i = 0; i < mfrc522.uid.size; i++) 
-  {
-     
-    idcard.concat(String(mfrc522.uid.uidByte[i], HEX));
-  }
-    idcard.toUpperCase();
-    if(idcard.substring(1) != idadm.substring(1)){
-      Serial.println("Apenas o cartão do administrador poderá efetuar recargas");
-      saida();
-      return;
-      }
-        // Halt PICC
-  mfrc522.PICC_HaltA();
-  // Stop encryption on PCD
-  mfrc522.PCD_StopCrypto1();
-      Serial.print("Cartão ADM identificado: ");
-    Serial.println("Digite um valor para recarregar");
-    do {
-      valor[0] = Serial.parseInt();
-
-    } while (valor[0] <= 0);
-    Serial.println("Aproxime o cartão do usuário que receberá a recarga");
-    verificaCartao();
-    status = (MFRC522::StatusCode) mfrc522.MIFARE_Read(blocosaldo, readwrite, 16);
-    //    if (status != MFRC522::STATUS_OK) {
-    //        Serial.print(F("MIFARE_Read() failed: "));
-    //        Serial.println(mfrc522.GetStatusCodeName(status));
-    //    }
-    verificaEstouro = (int)(valor[0]);
-    verificaEstouro += (int)( readwrite[0]);
-    valor[0] += readwrite[0];
-    valor[16] = readwrite[16];
-    if (verificaEstouro > 255) {
-      Serial.println("ERRO: O valor nao pode ultrapassar o máximo de 255");
-
-      saida();
-      clr();
-      return;
-    }
-
-    // Write data to the block
-    status = (MFRC522::StatusCode) mfrc522.MIFARE_Write(blocosaldo, valor, 16);
-    //    if (status != MFRC522::STATUS_OK) {
-    //        Serial.print(F("MIFARE_Write() failed: "));
-    //        Serial.println(mfrc522.GetStatusCodeName(status));
-    //    }
-    Serial.print("Concluído, seu novo saldo é R$:"); Serial.println(valor[0]);
-    saida();
-    return;
-
-
-  }
-  else if (decisao == 3) {
-    verificaCartao();
-    status = (MFRC522::StatusCode) mfrc522.MIFARE_Read(blocosaldo, readwrite, 16);
-
-    Serial.print("Seu saldo é de R$: "); Serial.println(readwrite[0]);
-    lcd.clear();
-    lcd.setCursor(0,0);
-    lcd.print("SALDO : "); lcd.print(readwrite[0]);
-    saida();
-    return;
-
-
-  }
-
-  return;
-
-
-
 }
 void clr() {
   int i;
@@ -288,9 +248,13 @@ int saida() {
 
 }
 int ativaBomba(int bomba) {
-  digitalWrite(bomba, HIGH);
-digitalWrite(trigPin, LOW);
-                   Serial.println("ENTREEI");
+  
+  int cont;
+  float mediav[5],mediav1[5];
+  digitalWrite(bomba,HIGH);
+  for(cont=0;cont<5;cont++){
+  digitalWrite(trigPin, LOW);
+                   //Serial.println("ENTREEI");
                   delayMicroseconds(2);
                   // Sets the trigPin on HIGH state for 10 micro seconds
                   digitalWrite(trigPin, HIGH);
@@ -306,10 +270,13 @@ digitalWrite(trigPin, LOW);
 
                   alturaliquido = ((-1)*distance)+ alturarecipiente;
 
-                  volume = alturaliquido*areabase;
+                  mediav[cont] = alturaliquido*areabase;
                   delay(100);
+                  }
+                  volume = (mediav[0] + mediav[1] + mediav[2]+mediav[3]+mediav[4])/5;
                   do{
-                    Serial.println("N FOI AINDA");
+                    for(cont=0;cont<5;cont++){
+                    //Serial.println("N FOI AINDA");
                     digitalWrite(trigPin, LOW);
                   delayMicroseconds(2);
                   // Sets the trigPin on HIGH state for 10 micro seconds
@@ -326,11 +293,12 @@ digitalWrite(trigPin, LOW);
 
                   alturaliquido = ((-1)*distance)+ alturarecipiente;
 
-                  volume1 = alturaliquido*areabase;
+                  mediav1[cont] = alturaliquido*areabase;
                   delay(100);
-                    
-                    Serial.print(volume);Serial.print(volume1);
-                    }while(volume1>(volume-quantidade));                  
+                    }
+                    volume1 = (mediav1[0] + mediav1[1]+ mediav1[2]+mediav1[3]+mediav1[4])/5;
+                    //Serial.print(volume);Serial.print(" ");Serial.println(volume1);
+                    }while(volume1>(volume-quantidade-40));                  
                Serial.println("SAIUUUU");
 
   digitalWrite(bomba, LOW);
@@ -409,27 +377,28 @@ int leituraBotao(){
   delay(1500);
   lcd.clear();
   lcd.setCursor(0,0);
-  lcd.print("50ML 150ML 300ML");
+  lcd.print(qtdes[0]);lcd.print("ML ");lcd.print(qtdes[1]);lcd.print("ML");lcd.print(" SAIR");
   quantidade=0; 
   do{
     if(analogRead(A0)>=700){
+      quantia = 0;
       lcd.clear();
       lcd.setCursor(6,0);
-      lcd.print("50ML");
-      quantidade = 50;
+      lcd.print(qtdes[0]);lcd.print("ML ");
+      quantidade = qtdes[0];
       
       }
      else if(analogRead(A1)>=700){
+      quantia = 1;
       lcd.clear();
       lcd.setCursor(6,0);
-      lcd.print("150ML");
-      quantidade = 150;
+      lcd.print(qtdes[1]);lcd.print("ML ");
+      quantidade = qtdes[1];
       }
       else if(analogRead(A2)>=700){
-        lcd.clear();
-        lcd.setCursor(6,0);
-        lcd.print("300ML");
-        quantidade=300;
+        while(analogRead(A2)>=700);
+        delay(50);
+        return 15;
         
         } 
         
